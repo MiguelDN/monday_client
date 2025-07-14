@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "monday-client"
+version = "0.1.0"
+description = "Cliente Python para integraciones con la API GraphQL de Monday.com"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+  { name="Miguel Diaz", email="mpsdiaz@gmail.com" }
+]
+license = { text = "MIT" }
+dependencies = [
+  "requests>=2.25.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
