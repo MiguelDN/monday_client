@@ -3,6 +3,7 @@ import requests
 import json
 from .exceptions import MondayAPIError
 from .utils import monday_request
+from .fragments import ALL_COLUMNS_FRAGMENT
 import logging
 
 
@@ -155,197 +156,13 @@ class MondayClient:
         
         
           
-          
-        
-        all_columns = f'''
-                                column {{ title id type }}
-                        
-                        ... on TextValue{{
-                            text
-                        }}
-                        ... on DateValue{{
-                            date
-                        }}
-                        ... on StatusValue{{
-                            label
-                        }}
-                        ... on PeopleValue{{
-                            persons_and_teams{{
-                            id
-                            kind
-                            }}
-                        }}
-                        ... on DropdownValue{{
-                            text
-                            values{{
-                            label
-                            id
-                            }}
-                            value
-                        }}
-                        ... on TimelineValue{{
-                            from
-                            to
-                        }}
-                        ... on LinkValue{{
-                            url
-                            url_text
-                        }}
-                        
-                        ... on NumbersValue{{
-                            id 
-                            number
-                                    text
-                            
-                        }}
-                        ... on FormulaValue {{
-                            value
-                            id
-                            
-                        }}
-                        ... on DocValue {{
-                            file{{
-                            doc{{
-                                url
-                            }}
-                            }}
-                        }}
-                        ... on CheckboxValue {{
-                            checked
-                        }}
-                        ... on PhoneValue {{
-                            id
-                            country_short_name
-                            phone
-                        }}
-                        ... on WorldClockValue {{
-                            text
-                            timezone
-                            
-                        }}
-                        ... on LocationValue {{
-                            address
-                            lat
-                            lng
-                            
-                        }}
-                        ... on CountryValue {{
-                            country{{
-                            name
-                            code
-                            }}
-                        }}
-                        ... on DependencyValue {{
-                            linked_item_ids
-                        }}
-                        ... on EmailValue {{
-                            email
-                            text
-                        }}
-                        ... on HourValue {{
-                            minute
-                            hour
-                        }}
-                        ... on RatingValue {{
-                            rating
-                            
-                        }}
-                        ... on TagsValue {{
-                            tag_ids
-                            text
-                            tags {{
-                            id
-                            name
-                            }}
-                        }}
-                        ... on TimeTrackingValue{{
-                            running
-                            history{{
-                            created_at
-                            started_at
-                            ended_at
-                            }}
-                        }}
-                        ... on CreationLogValue {{
-                            created_at
-                            creator{{
-                            id
-                            }}
-                        }}
-                        ... on ColorPickerValue {{
-                            color
-                            updated_at
-                        }}
-                        ... on LastUpdatedValue {{
-                            updated_at
-                            value
-                        }}
-                        ... on ItemIdValue {{
-                            value
-                            text
-                        }}
-                        ... on VoteValue {{
-                            vote_count
-                            voter_ids
-                        }}
-                        ... on ButtonValue {{
-                            color
-                            label
-                        }}
-                        ... on MirrorValue {{
-                            display_value
-                            id
-                        }}
-                        ... on FileValue {{
-                            id
-                            value
-                        }}
-                        ... on FormulaValue {{
-                            value
-                            id
-                        }}
-                        ... on DocValue {{
-                            file{{
-                            doc{{
-                                id
-                            }}
-                            }}
-                        
-                        }}
-                        ... on LongTextValue{{
-                            text
-                        }}
-                        
-                        ... on TimeTrackingValue{{
-                            running
-                            history{{
-                            created_at
-                            started_user_id
-                            started_at
-                            ended_at
-                            ended_user_id
-                            }}
-                        }}
-                        ... on BoardRelationValue{{
-                            linked_items{{
-                                id
-                                name
-                                board{{
-                                  name
-                                  id
-                                }}
-                            }}
-                            linked_item_ids
-                        }}
-                        
-        '''
         
         if columns_ids:
           ids = f'(ids:{json.dumps(columns_ids)})'
         else:
           ids = ""
         
-        fields = fields or ["id", "name", f"column_values{ids}  {{ {all_columns} }}"]
+        fields = fields or ["id", "name", f"column_values{ids}  {{ {ALL_COLUMNS_FRAGMENT} }}"]
         fields_block = "\n".join(fields)
 
         # 1) Primera página: items_page anidado en boards
@@ -684,3 +501,58 @@ class MondayClient:
         items = boards[0]["items_page"]["items"]
         return items
         
+        
+        
+    def get_item(self,
+                item_id: int,
+                columns_ids: list[str] | None = None) -> dict:
+        """
+        Obtiene un ítem específico de Monday.com por su ID.
+
+        Parameters
+        ----------
+        item_id : int
+            ID del ítem a obtener.
+        columns_ids : list[str] | None, optional
+            Lista de IDs de columnas a incluir en la respuesta. Si es None, se
+            devolverán todas las columnas.
+
+        Returns
+        -------
+        dict
+            Diccionario con los datos del ítem, incluyendo sus columnas y valores.
+
+        Raises
+        ------
+        MondayAPIError
+            Si la consulta GraphQL falla o la API devuelve errores.
+        """
+        # 1) argumento para column_values
+        if columns_ids:
+            # json.dumps -> '["sadfg","sdfs"]'
+            cols_list = json.dumps(columns_ids)
+            ids_arg = f"(ids:{cols_list})"
+        else:
+            ids_arg = ""
+        
+        query = f'''
+            query {{
+            items(ids:{item_id}) {{
+                column_values{ids_arg} {{
+                column{{
+                    title
+                    id
+                }}
+                {ALL_COLUMNS_FRAGMENT}
+                }}
+            }}
+            }}
+        '''
+        
+        response = self.execute_query(query)
+        items = response.get("items", [])
+        
+        if not items:
+            raise MondayAPIError(f"No se encontró el ítem con ID {item_id}")
+
+        return items[0]
