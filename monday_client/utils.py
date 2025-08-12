@@ -87,7 +87,7 @@ def monday_request(
     api_url = "https://api.monday.com/v2"
     headers = {
         "Authorization": api_key,
-        "API-Version": "2025-04",
+        "API-Version": "2025-07",
         "Content-Type": "application/json",
     }
     payload = {"query": query}
@@ -126,13 +126,16 @@ def monday_request(
                 errs = resp["errors"]
                 code = resp.get("error_code") or errs[0].get("extensions", {}).get("code")
                 # ComplexityException → reintentar
-                if code == "ComplexityException":
-                    wait_secs = 1
+                if code in ("ComplexityException", "COMPLEXITY_BUDGET_EXHAUSTED"):
+                    wait_secs = 10
                     try:
-                        wait_secs = int(errs[0]["message"].split()[-2]) + 1
+                        wait_secs = (
+                            int(errs[0].get("extensions", {}).get("retry_in_seconds"))  # para COMPLEXITY_BUDGET_EXHAUSTED
+                            or int(errs[0]["message"].split()[-2]) + 1  # fallback por si es ComplexityException clásico
+                        )
                     except Exception:
                         pass
-                    logger.info("ComplexityException — waiting %ds", wait_secs)
+                    logger.info("%s — waiting %ds", code, wait_secs)
                     time.sleep(wait_secs)
                     continue
                 # Cualquier otro error GraphQL → levantar YA

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cartagon-monday-client"
-version = "0.1.0"
+version = "0.1.6"
 description = "Cliente Python para integraciones con la API GraphQL de Monday.com"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -26,4 +26,4 @@ dev = [
 where = ["."]
 
 [project.urls]
-"Homepage" = "https://github.com/MiguelDN/monday_client/settings"
+"Homepage" = "https://github.com/MiguelDN/cartagon-monday-client/settings"
