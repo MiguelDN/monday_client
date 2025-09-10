@@ -1,77 +1,12 @@
-# import time
-# import requests
-# import logging
-
-# logger = logging.getLogger(__name__)
-
-
-
-# def monday_request(query: str, api_key: str, max_retries: int = 5, retry_delay: int = 3) -> dict:
-#     """
-#     Realiza peticiones a la API de Monday.com con:
-#     - Manejo de errores HTTP
-#     - Reintentos en caso de error (hasta max_retries veces)
-#     - Gestión de JSON inválido y errores de complejidad
-#     """
-#     api_url = "https://api.monday.com/v2"
-#     headers = {
-#         "Authorization": api_key,
-#         "API-Version": "2025-04",
-#         "Content-Type": "application/json"
-#     }
-#     payload = {"query": query}
-
-#     for attempt in range(1, max_retries + 1):
-#         logger.debug("Intento %d: ejecutando query=%s", attempt, query)
-#         try:
-#             r = requests.post(api_url, json=payload, headers=headers)
-#             logger.debug("Respuesta status=%d body=%s", r.status_code, r.text)
-
-#             if r.status_code == 403:
-#                 logger.warning("Acceso denegado (403). Intento %d/%d", attempt, max_retries)
-#                 time.sleep(retry_delay)
-#                 continue
-
-#             try:
-#                 resp = r.json()
-#             except ValueError:
-#                 logger.error("JSON inválido en respuesta. Intento %d/%d", attempt, max_retries)
-#                 time.sleep(retry_delay)
-#                 continue
-
-#             if "errors" in resp:
-#                 logger.error("Errores GraphQL: %s", resp["errors"])
-#                 if resp.get("error_code") == "ComplexityException":
-#                     try:
-#                         secs = int(resp["errors"][0].split()[-2]) + 1
-#                     except Exception:
-#                         secs = 5
-#                     logger.info("Esperando %ds por ComplexityException", secs)
-#                     time.sleep(secs)
-#                     continue
-#                 logger.warning("Error API desconocido. Intento %d/%d", attempt, max_retries)
-#                 time.sleep(retry_delay)
-#                 continue
-
-#             return resp
-
-#         except requests.RequestException as e:
-#             logger.exception("Error de red en intento %d/%d", attempt, max_retries)
-#             time.sleep(retry_delay)
-
-#     logger.critical("Max retries alcanzados (%d). Abortando.", max_retries)
-#     return {"errors": [{"message": "Max retries reached"}]}
-
-
-
-
 import time
 import requests
 import logging
 from typing import Any, Dict, Optional
 from .exceptions import MondayAPIError
 
+
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 def monday_request(
     query: str,
@@ -93,6 +28,7 @@ def monday_request(
     payload = {"query": query}
 
     for attempt in range(1, max_retries + 1):
+        
         logger.debug("[Intento %d/%d] Query:\n%s", attempt, max_retries, query)
         try:
             r = requests.post(api_url, json=payload, headers=headers, timeout=10)

@@ -359,7 +359,6 @@ class MondayClient:
                         }}
                 }}"""
         
-        print('Query para crear subítem:', query)  # Debug: mostramos la query completa
         # Llamamos a execute_query solo con la query
         data = self.execute_query(query)
         
@@ -563,8 +562,12 @@ class MondayClient:
         """
         # Montamos la primera consulta con filtro en items_page
         
-        fields = fields or ["id", "name", f"column_values {{ {ALL_COLUMNS_FRAGMENT} }}"]
-        fields_block = "\n".join(fields)
+        if not fields:
+            fields = ["id", "name", f"column_values {{ {ALL_COLUMNS_FRAGMENT} }}"]
+            fields_block = "\n".join(fields)
+            # fields_block = "id name column_values { ... }"
+        else:
+            fields_block = fields
         
         
         query_first = f"""
@@ -882,7 +885,8 @@ class MondayClient:
             """
             
             if mention_user:
-                mention_user = f'mentions_list:{json.dumps(mention_user).replace('"','')}'
+                clean_mentions = json.dumps(mention_user).replace('"', '')
+                mention_user = f"mentions_list:{clean_mentions}"
             else:
                 mention_user = ""
             
