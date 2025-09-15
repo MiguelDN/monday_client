@@ -102,8 +102,13 @@ class MondayClient:
         
         if page < 1:
             raise ValueError("page debe ser >= 1")
-        fields = fields or ["id", "name", "workspace_id", "state", "board_kind"]
-        fields_block = "\n".join(fields)
+        if not fields:
+            fields = fields or ["id", "name", "workspace_id", "state", "board_kind"]
+            fields_block = "\n".join(fields)
+            # fields_block = "id name column_values { ... }"
+        else:
+            fields_block = fields
+        
         query = f"""
         query {{
           boards(limit: {limit}, page: {page}) {{
@@ -162,8 +167,12 @@ class MondayClient:
         else:
           ids = ""
         
-        fields = fields or ["id", "name", f"column_values{ids}  {{ {ALL_COLUMNS_FRAGMENT} }}"]
-        fields_block = "\n".join(fields)
+        if not fields:
+            fields = ["id", "name", f"column_values {{ {ALL_COLUMNS_FRAGMENT} }}"]
+            fields_block = "\n".join(fields)
+            # fields_block = "id name column_values { ... }"
+        else:
+            fields_block = fields
 
         # 1) Primera página: items_page anidado en boards
         query_first = f"""
